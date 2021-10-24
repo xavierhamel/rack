@@ -1,0 +1,200 @@
+include "str.rk"
+include "vec.rk"
+include "string.rk"
+# Rack internal memory (`mem` and `_mem` keyword).
+# Rack static memory is used for memory management. `mem` is for the user of the
+# language and `_mem` is for internal usage only. 256 bytes are available with
+# each keyword.
+# If more memory is necessary, use `std::alloc` which will return a pointer to a
+# new memory location allocated by the OS.
+# Never use the `_mem` keyword to write to memory, you will break things.
+
+# Internally (`_mem`), bytes 0 to 31 are reserved for usage with io. Bytes 32 to
+# 39 are for the heap handle (see `std::_heap_handle`).
+
+# Example of a function definition:
+# USAGE:
+#   std::function(top of the stack, bottom of the stack) -> return
+
+# === === === === === ===
+# Windows API definitions
+# === === === === === ===
+const WriteConsoleA 4 end
+const GetStdHandle 1 end
+
+const ExitProcess 1 end
+
+const HeapAlloc 3 end
+const HeapReAlloc 4 end
+const HeapCreate 3 end
+const HeapFree 3 end
+const HeapDestroy 1 end
+const GetProcessHeap 0 end
+
+const CreateFileA  7 end
+const ReadFile 4 end
+
+# === === === === === ===
+# General
+# === === === === === ===
+fn std::exit[void]
+    std::_heap_handle sys::HeapDestroy drop
+    0 sys::ExitProcess drop
+end
+
+fn std::assert[int, int, str|ptr -> void]
+    != if
+        "ERROR - A Test Failed: " std::print_str
+        10 std::print_char 13 std::print_char
+        std::print_str
+        std::exit
+    else
+        drop
+    end
+end
+
+# === === === === === ===
+# Input/Output
+# === === === === === ===
+# Print a string to the stdout. Will pop two arguments from the stack. The first
+# one is the address of the string and the seconde one is the size of the
+# string. Push both value in reverse order.
+fn std::print_str[str|ptr -> void]
+    _mem over str::len rot
+    -11 sys::GetStdHandle
+    sys::WriteConsoleA
+    drop
+end
+
+# Print a string to the stdout and add a new line. Will pop two arguments from
+# the stack. The first one is the address of the string and the seconde one is
+# the size of the string. Push both value in reverse order.
+fn std::println_str[str|ptr -> void]
+    _mem str::len(over) rot
+    sys::GetStdHandle(-11)
+    sys::WriteConsoleA()
+    drop
+    10 std::print_char 13 std::print_char
+end
+
+
+# Print an ascii encoded char to the stdout. Will pop only one argument, the
+# code of the char.
+fn std::print_char[char|int -> void]
+    _mem 8 + store8
+    0 _mem 9 + store8
+    _mem 8 +
+    std::print_str
+end
+
+# Will print a positive integer to the stdout. Will pop only one argument, the
+# number that is being printed.
+fn std::print_int[int -> void]
+    # dup 1000000000 > if 1000000000 - end
+    100000000000000000 __rk_idx put
+    dup 100000000000000000 / 48 + std::print_char
+    while __rk_idx ! 10 >= do
+        dup __rk_idx ! % __rk_idx ! 10 / / 
+        48 + std::print_char
+        __rk_idx ! 10 / __rk_idx put
+    end
+    drop
+    std::print_ln
+end
+
+# Will print a new line. Will pop no arguments
+fn std::print_ln[void]
+    10 std::print_char 13 std::print_char
+end
+
+# === === === === === ===
+# File system
+# === === === === === ===
+# Throw an error and print the corresponding error integer on the stdout. Exit
+# the process after the error is thrown. Will pop only one argument, the integer
+# of the error code.
+fn std::throw_int[int -> void]
+    "Error: " std::print_str
+    std::print_int
+    std::exit
+end
+
+# Throw an error and print the corresponding error message on the stdout. Exit
+# the process after the error is thrown.
+fn std::throw[str|ptr -> void]
+    "Error: " std::print_str std::print_str
+    std::exit
+end
+
+# === === === === === ===
+# Heap / Alloc
+# === === === === === ===
+# Will push the handle to the heap of the current application on the stack.
+fn std::_heap_handle[ptr] _mem 32 + load end
+
+# Will create a new heap for the current application from the OS. The handle to
+# the heap is stored in the static memory of the application.
+# https://docs.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heapcreate
+fn std::_init_heap[void]
+    0 1 0 sys::HeapCreate
+    0 = if
+        "An internal error occured while starting up, this is a bug!" std::throw
+    else
+        _mem 32 + store
+    end
+end
+
+# Will allocate some memory on the heap. Will pop only one argument, the size of
+# the necessary allocation. Will push back a pointer to the memory allocated.
+# https://docs.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heapalloc
+# USAGE:
+#   std::alloc(size) -> ptr
+fn std::alloc[int -> ptr]
+    # Alloc change the value of the first 4 element on the stack... That's why
+    # we push 0s and drop them after... Very weird, but it works...
+    __rk_tmp_1 put
+    0 0 0 0 __rk_tmp_1!
+    0 sys::GetProcessHeap sys::HeapAlloc
+    __rk_tmp_1 put 
+    drop drop drop drop __rk_tmp_1!
+    dup 0 = if
+        "An internal error occured while allocating memory, this is a bug!" std::throw
+    end
+end
+
+# Will reallocate some memory to a new size. Will pop two argument, the address
+# of the previously allocated space and the new size of the allocation. Will
+# push back a pointer to the allocated memory
+# https://docs.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heaprealloc
+# USAGE:
+#   std::realloc(ptr, size) -> new_ptr
+fn std::realloc[ptr, int -> ptr]
+    __rk_tmp_1 put
+    __rk_tmp_2 put
+    0 0 0 __rk_tmp_2! __rk_tmp_1!
+    0 sys::GetProcessHeap sys::HeapReAlloc
+    __rk_tmp_1 put drop drop drop __rk_tmp_1!
+    dup 0 = if
+        "An internal error occured while reallocating memory, this is a bug!" std::throw
+    end
+end
+
+# Will free previously allocated memory. Will pop only one argument, the address
+# of the memory to free.
+# https://docs.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heapfree
+# address
+fn std::free[ptr -> void]
+    0 std::_heap_handle sys::HeapFree
+    dup 0 = if
+        "An internal error occured while freeing memory, this is a bug!" std::throw
+    end
+    drop
+end
+
+
+fn debug[int|ptr, int|ptr, int|ptr, int|ptr -> void]
+    std::print_int
+    std::print_int
+    std::print_int
+    std::print_int
+end

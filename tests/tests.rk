@@ -1,0 +1,129 @@
+include "std.rk"
+
+# Tests for standard functions. If a test passes nothing is printed on the
+# screen. If the test fails the message above the test will be printed. Some
+# things are hard to tests (if the print_str work for example). They are not
+# test for the moment.
+
+# Test for string functions.
+"Find the index of a char in a string, with the char in the string"
+str::find_char('d', "abcde") 3 std::assert
+
+"Find the index of a char in a string, when the char in not in the string"
+str::find_char('d', "abce") -1 std::assert
+
+"Find the length of a given string"
+str::len("abced") 5 std::assert
+
+std::println_str("All string function tests were successful")
+
+# Test for control flow
+"If equal"
+5 5 = if 1 else 2 end 1 std::assert
+
+"If not equal"
+5 4 != if 1 else 2 end 1 std::assert
+
+"If greater"
+5 4 > if 1 else 2 end 1 std::assert
+
+"If greater or equal"
+5 5 >= if 1 else 2 end 1 std::assert
+
+"If lesser"
+4 5 < if 1 else 2 end 1 std::assert
+
+"If lesser or equal"
+5 5 <= if 1 else 2 end 1 std::assert
+
+"Logical and"
+5 5 = 3 2 != & if 1 else 2 end 1 std::assert
+
+"Logical or"
+4 3 = 2 3 = | if 1 else 2 end 2 std::assert
+
+"while test"
+0 while dup 5 < do 1 + end 5 std::assert
+
+"All control flow tests were successful" std::println_str
+
+# Arithmetic functions
+"Adding 2 numbers"
+2 3 + 5 std::assert
+
+"Substracting 2 numbers"
+2 3 - -1 std::assert
+
+"Multiplying numbers"
+2 3 * 6 std::assert
+
+"Dividing numbers"
+6 3 / 2 std::assert
+
+"Modulo of a number"
+11 9 % 2 std::assert
+
+"All arithmetic tests were successful" std::println_str
+
+# Memory functions
+# Different numbers are used in each tests to not interact bettween each other
+# (if there is a bug with drop or something like that)
+69 _rk_test put
+
+"Drop the top most value of the stack"
+0 1 drop 0 std::assert
+
+3 "Swaping the 2 value on top of the stack" swap 3 std::assert
+
+
+4 5 "Rotating the third element on the stack to the top" rot 4 std::assert drop
+
+"Duplicating the top most value on the stack"
+6 dup drop 6 std::assert
+
+7 "Duplicating the second value on the stack" over 7 std::assert drop
+
+"Fetching the value of a variable (!)"
+_rk_test! 69 std::assert
+
+"Fetching the value of a variable (fetch)"
+_rk_test fetch 69 std::assert
+
+420 mem store 
+
+"Storing and loading a value from the static memory"
+mem load 420 std::assert
+
+"All memory tests were successfull" std::println_str
+
+# Vector tests
+vec::new(-1, 1) vector put
+
+vec::push(vector!, 123)
+vec::push(vector!, 456)
+vec::push(vector!, 789)
+
+"Push or getting a value back, it's hard to test for a push but we can read a value to see if the push succeeded"
+vec::get(vector!, 2) load 789 std::assert
+
+"Find the length of the vector"
+vec::len(vector!) 3 std::assert
+
+"All vector tests were successfull" std::println_str
+
+# string tests
+# Create a string from a str and print it on the stdout.
+string::from("String tests") drop
+std::println_str("test")
+
+string::from("Hello") string put
+
+string::push_str(string!, ", world!")
+
+string::from("From Xavier") string_2 put
+
+string::push_str(string!, string_2!)
+
+std::println_str(string!)
+
+"All tests were successfull" std::print_str

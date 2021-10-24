@@ -1,0 +1,42 @@
+# String utility functions
+
+# Will return the index of a given char in a string. This function will pop 2
+# arguments, the first is the charater to find in the string and the second is
+# the address of the string to search. If no match is found, -1 is returned
+# 
+fn str::find_char[int, str|ptr -> int]
+    0 swap str::find_char_from
+end
+
+# Will return the index of a given char in a string. This function will pop 2
+# arguments, the first is the charater to find in the string and the second is
+# the address of the string to search. If no match is found, -1 is returned
+# USAGE:
+#   std::find_char_from(char, starting_idx, str -> idx)
+fn str::find_char_from[int, int, str|ptr -> int]
+    _rk_char put
+    over +
+    while dup load8 _rk_char! != over load8 0 != & do
+        1 + 
+    end
+    dup load8 0 = _rk_char! 0 != & if
+        drop drop -1
+    else
+        swap - 
+    end
+end
+
+# Will return the length of the c-string at the given address. This function will
+# pop one argument, the address of the string and push back the length of the
+# string. Check for the null terminating byte to count the length.
+# USAGE:
+#   str::len(str) -> int
+fn str::len[str|ptr -> int]
+    0 str::find_char
+end
+
+# Alias for `std::print_str`
+fn str::print[str|ptr -> void]
+    std::print_str
+end
+

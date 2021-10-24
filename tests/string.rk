@@ -1,0 +1,69 @@
+
+# Create  a string from a str (static string). And return a pointer to the
+# created string. A string is put on the heap for later manipulations. The
+# function will copy one char at a time to the allocated memory. For faster
+# copying, should probably do it a qword at a time.
+# USAGE:
+#   string::from(str) -> ptr
+fn string::from[str -> ptr]
+    _rk_str_ptr put
+    str::len(_rk_str_ptr!) 1 +
+    std::alloc(dup)
+    _rk_string_ptr put
+    0 while over over > do
+        _rk_str_ptr! over + load8
+        over _rk_string_ptr! + store8
+        1 +
+    end
+    drop drop
+    _rk_string_ptr!
+end
+
+fn string::free[ptr -> void]
+    std::free
+end
+
+# Push a str (static str) to the end of the current string. This is very slow
+# because not optimize at all but still works. Takes to arguments, a ptr to a
+# string and a ptr to a static str. Return a new ptr to the string (realloc some
+# memory so the ptr will have change)
+# USAGE:
+#   string::push_str(ptr, str) -> ptr
+fn string::push_str[ptr, str|ptr -> !ptr]
+    string::len(dup) _rk_string_len put
+    str::len(over) _rk_str_len put
+    _rk_string_ptr put
+    _rk_str_ptr put
+    std::realloc(_rk_string_ptr!, _rk_string_len! _rk_str_len! + 1 +) _rk_string_ptr put
+    _rk_str_len! 0 while over over >= do
+        _rk_str_ptr! over + load8
+        over _rk_string_ptr! + _rk_string_len! + store8
+        1 +
+    end
+    drop drop
+    _rk_string_ptr!
+end
+
+# Will return the length of the c-string at the given address. This function will
+# pop one argument, the address of the string and push back the length of the
+# string. Check for the null terminating byte to count the length.
+# USAGE:
+#   string::len(ptr)
+fn string::len[ptr -> int]
+    0 str::find_char
+end
+
+fn string::push_string[ptr, ptr -> ptr]
+    string::push_str
+end
+
+
+# string::from("Hello") _str put
+
+# string::from("I love you") _str2 put
+
+# string::push_str(_str!, ", world!")
+
+# string::push_string(_str!, _str2!)
+
+# string::print(_str!)

@@ -1,0 +1,76 @@
+const VEC_DEFAULT_SIZE 525 end
+const VEC_METADATA_SIZE 17 end
+
+# A vector is a growable list of element allocated on the heap. 3 values are
+# necessary to describe the vector, it's allocated size, it's current idx and
+# the size of each value.
+
+# Create a new vector on the heap. Will pop two value from the stack, the
+# initial size of the vector and the size of each value. Will return a ptr to
+# the vector. If the size of the vector is -1, a default value is initialized
+# for the vector.
+# For now, the size_of_value represent increment of 8 bytes. 1 = 8 bytes, 2 = 16
+# bytes...
+#
+# USAGE:
+#   <size of value> <capacity> vec::new -> ptr
+#   vec::new(capacity (or -1), size_of_value) -> ptr_to_vec
+fn vec::new[int, int -> ptr]
+    dup -1 = if
+        drop VEC_DEFAULT_SIZE
+    else
+        VEC_METADATA_SIZE +
+    end
+    dup std::alloc
+    # storing the size of the vector
+    dup rot swap store
+    # storing the size of a value
+    dup rot swap 8 + store8
+    # storing the current idx
+    dup 0 swap 9 + store
+    # swap drop
+end
+
+# Push a value at the end of the vector. If a vector is on multiple qword long,
+# push them one by one and they will be push at the corresponding place. The
+# number of values poped is defined by <size of value> when the vector is first
+# created.
+# 
+# USAGE:
+#   <...value(s)> <ptr to vector> vec::push
+#   vec::push(vector!, value1, value2, ...)
+fn vec::push[ptr, int -> !void]
+    dup __rk_vec_ptr put # values;ptr
+    dup load __rk_vec_len put # values; ptr;
+    dup 8 + load8 __rk_value_size put # values; ptr;
+    9 + load __rk_vec_idx put # values
+    __rk_value_size ! __rk_vec_idx ! 1 + *
+    __rk_vec_len ! > if
+        "size of the vector was exeded" std::throw
+    end
+
+    0 while dup __rk_value_size ! 8 * < do
+        dup __rk_value_size ! 8 * __rk_vec_idx ! * +
+        __rk_vec_ptr ! + VEC_METADATA_SIZE + rot swap store
+        8 +
+    end
+    __rk_vec_idx ! 1 + __rk_vec_ptr ! 9 + store
+end
+
+# Get a pointer to a location of the vector. Will pop 2 values off the stack.
+# The first is the index of the element and the second is the ptr to the vector.
+#
+# USAGE:
+#   <index> <ptr to a vector> vec::get -> ptr to index
+#   vec::get(vector!, 2) -> ptr_to_index
+fn vec::get[ptr, int -> ptr]
+    dup 8 + load8 rot 8 * * + VEC_METADATA_SIZE +
+end
+
+# Return the length of the vector. Will pop one value off the stack, a ptr to
+# the vector. Will push back the length of the vector.
+# USAGE:
+#   vec::len(vector!) -> len
+fn vec::len[ptr -> int]
+    9 + load
+end
