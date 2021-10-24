@@ -31,23 +31,34 @@ This change is done because rack uses the reverse polish notation. You can pass 
 
 ## Types (all immutable)
 `str`: Static c-string like. They are written with double quotes.
+
 `char`: One character, represented internally as a number. They are written with single quotes.
+
 `int`: 64 bits integer.
+
 `ptr`: 64 bits integer pointing to an other value.
 
 ## Intrinsics
 ### Memory operations
 `mem`: Push a pointer to an internal memory buffer of 256 bytes that can be used freely. For more memory, see `std::alloc`
+
 `dup`: Duplicate and push the top most value on the stack.
+
 `over`: Duplicate and push the second value on the stack.
+
 `drop`: Drop (pop) the topmost value of the stack.
+
 `swap`: Swap the 2 top most values of the stack.
+
 `rot`: Bring the 3rd value of the stack to the top.
+
 `<identifier> put`: Save a value to a variable named `<identifier>` (pop the last value off the stack).
+
 `<identifier> fetch` or `<identifier>!`: Push the value of the variable on the stack.
 
 ### Arithmetic operations
 `+`, `-`, `*`, `/`, `%`: Pop the 2 top most values off the stack and push back the result.
+
 `&`, `|`: Pop the 2 top most values off the stack and push back the result of a binary or and binary and. Can also be used as a logical and and logical or.
 
 ### Comparison operations
